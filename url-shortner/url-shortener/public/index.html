@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snip — URL Shortener</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --accent: #e8ff47;
+      --accent2: #ff6b35;
+      --text: #f0f0f0;
+      --muted: #666;
+      --success: #47ffb2;
+      --error: #ff4747;
+      --radius: 4px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      padding: 40px 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 60px;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.6rem;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      background: var(--border);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 100px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 50px;
+    }
+
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+      position: relative;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.7;
+      max-width: 420px;
+    }
+
+    /* Main Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 16px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label::before {
+      content: '';
+      display: block;
+      width: 16px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"], input[type="url"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    .options-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .input-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: -6px;
+    }
+
+    button {
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      border: none;
+      border-radius: var(--radius);
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0a0a;
+      font-weight: 500;
+      font-size: 0.85rem;
+      padding: 14px 24px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+      background: #d4eb2e;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-icon {
+      background: var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.75rem;
+    }
+
+    .btn-icon:hover { background: #333; }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--error);
+      border: 1px solid var(--error);
+      padding: 6px 12px;
+      font-size: 0.7rem;
+    }
+    .btn-danger:hover { background: var(--error); color: #fff; }
+
+    .btn-toggle {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      font-size: 0.7rem;
+    }
+    .btn-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Result box */
+    .result-box {
+      display: none;
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 20px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .result-box.show { display: block; }
+
+    .result-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--success);
+      margin-bottom: 10px;
+    }
+
+    .result-url {
+      font-size: 1.1rem;
+      color: var(--accent);
+      font-weight: 500;
+      word-break: break-all;
+      margin-bottom: 14px;
+    }
+
+    .result-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    /* Stats / URL list */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      margin-top: 40px;
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.5px;
+    }
+
+    .url-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .url-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      animation: fadeUp 0.3s ease both;
+      transition: border-color 0.2s;
+    }
+
+    .url-item:hover { border-color: #444; }
+
+    .url-item.inactive { opacity: 0.5; }
+
+    .url-short {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .url-original {
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
+    }
+
+    .url-stats {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .clicks-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--accent2);
+    }
+
+    .url-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    /* Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 0.78rem;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--error); }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid transparent;
+      border-top-color: #0a0a0a;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      margin-top: 80px;
+      padding: 30px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 600px) {
+      .input-row { flex-direction: column; }
+      .options-row { grid-template-columns: 1fr; }
+      .url-item { grid-template-columns: 1fr; }
+      .url-original { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">snip<span>.</span></div>
+      <span class="badge">MongoDB + Node.js</span>
+    </header>
+
+    <div class="hero">
+      <h1>Shorten.<br><em>Share.</em> Track.</h1>
+      <p>Fast, minimal URL shortening with click analytics. Paste your URL, get a short link instantly.</p>
+    </div>
+
+    <!-- Shorten Card -->
+    <div class="card">
+      <div class="card-label">New Short Link</div>
+      <div class="input-group">
+        <div class="input-row">
+          <input type="url" id="originalUrl" placeholder="https://your-very-long-url.com/path/to/page" />
+          <button class="btn-primary" id="shortenBtn" onclick="shortenUrl()">
+            Snip →
+          </button>
+        </div>
+        <div class="options-row">
+          <div>
+            <input type="text" id="customAlias" placeholder="custom-alias (optional)" />
+            <div class="input-hint">letters, numbers, - and _</div>
+          </div>
+          <div>
+            <input type="text" id="expiresIn" placeholder="expires in N days (opt.)" />
+            <div class="input-hint">leave blank for permanent</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-label">✓ link created</div>
+        <div class="result-url" id="resultUrl"></div>
+        <div class="result-meta">
+          <span id="resultOriginal"></span>
+          <span id="resultExpiry"></span>
+        </div>
+        <div class="result-actions">
+          <button class="btn-primary" onclick="copyResult()">Copy Link</button>
+          <button class="btn-icon" onclick="openResult()">Open ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- URL List -->
+    <div class="section-header">
+      <div class="section-title">Recent Links</div>
+      <button class="btn-icon" onclick="loadUrls()">↻ Refresh</button>
+    </div>
+
+    <div class="url-list" id="urlList">
+      <div class="empty-state">Loading...</div>
+    </div>
+
+    <footer>snip. — built with Node.js + Express + MongoDB</footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const BASE = ''; // same origin
+    let currentResult = null;
+
+    async function shortenUrl() {
+      const url = document.getElementById('originalUrl').value.trim();
+      const alias = document.getElementById('customAlias').value.trim();
+      const expiry = document.getElementById('expiresIn').value.trim();
+      const btn = document.getElementById('shortenBtn');
+
+      if (!url) return showToast('Please enter a URL', 'error');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        const body = { originalUrl: url };
+        if (alias) body.customAlias = alias;
+        if (expiry) body.expiresIn = expiry;
+
+        const res = await fetch(`${BASE}/api/shorten`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to shorten URL');
+
+        currentResult = data.data;
+
+        document.getElementById('resultUrl').textContent = data.data.shortUrl;
+        document.getElementById('resultOriginal').textContent =
+          '→ ' + truncate(data.data.originalUrl, 50);
+        document.getElementById('resultExpiry').textContent =
+          data.data.expiresAt
+            ? `Expires: ${new Date(data.data.expiresAt).toLocaleDateString()}`
+            : 'No expiry';
+
+        document.getElementById('resultBox').classList.add('show');
+
+        document.getElementById('originalUrl').value = '';
+        document.getElementById('customAlias').value = '';
+        document.getElementById('expiresIn').value = '';
+
+        showToast('Link created!', 'success');
+        loadUrls();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Snip →';
+      }
+    }
+
+    function copyResult() {
+      if (!currentResult) return;
+      navigator.clipboard.writeText(currentResult.shortUrl);
+      showToast('Copied to clipboard!', 'success');
+    }
+
+    function openResult() {
+      if (!currentResult) return;
+      window.open(currentResult.shortUrl, '_blank');
+    }
+
+    async function loadUrls() {
+      const list = document.getElementById('urlList');
+      try {
+        const res = await fetch(`${BASE}/api/urls?limit=15`);
+        const data = await res.json();
+
+        if (!data.data || data.data.length === 0) {
+          list.innerHTML = '<div class="empty-state">No short links yet.<br>Create your first one above!</div>';
+          return;
+        }
+
+        list.innerHTML = data.data.map(u => `
+          <div class="url-item ${u.isActive ? '' : 'inactive'}" id="item-${u.shortCode}">
+            <div>
+              <div class="url-short">${u.shortUrl || location.origin + '/' + u.shortCode}</div>
+              <div class="url-original">${u.originalUrl}</div>
+              <div class="url-stats">
+                <span class="clicks-badge">⬡ ${u.clicks} click${u.clicks !== 1 ? 's' : ''}</span>
+                &nbsp;·&nbsp; ${timeAgo(u.createdAt)}
+                ${u.expiresAt ? `&nbsp;·&nbsp; expires ${new Date(u.expiresAt).toLocaleDateString()}` : ''}
+                ${!u.isActive ? ' &nbsp;·&nbsp; <span style="color:var(--error)">inactive</span>' : ''}
+              </div>
+            </div>
+            <div class="url-actions">
+              <button class="btn-icon" onclick="copyToClipboard('${u.shortUrl || location.origin + '/' + u.shortCode}')" title="Copy">⎘</button>
+              <button class="btn-toggle" onclick="toggleUrl('${u.shortCode}')">${u.isActive ? 'Disable' : 'Enable'}</button>
+              <button class="btn-danger" onclick="deleteUrl('${u.shortCode}')">✕</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        list.innerHTML = '<div class="empty-state">Could not load links.<br>Is the server running?</div>';
+      }
+    }
+
+    async function deleteUrl(shortCode) {
+      if (!confirm('Delete this short link?')) return;
+      try {
+        const res = await fetch(`${BASE}/api/urls/${shortCode}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete');
+        showToast('Deleted', 'success');
+        loadUrls();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function toggleUrl(shortCode) {
+      try {
+        const res = await fetch(`${BASE}/api/urls/${shortCode}/toggle`, { method: 'PATCH' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        showToast(data.message, 'success');
+        loadUrls();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text);
+      showToast('Copied!', 'success');
+    }
+
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast show ${type}`;
+      setTimeout(() => t.className = 'toast', 2800);
+    }
+
+    function truncate(str, n) {
+      return str.length > n ? str.slice(0, n) + '…' : str;
+    }
+
+    function timeAgo(dateStr) {
+      const diff = Date.now() - new Date(dateStr);
+      const m = Math.floor(diff / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h ago`;
+      return `${Math.floor(h / 24)}d ago`;
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('originalUrl').addEventListener('keydown', e => {
+      if (e.key === 'Enter') shortenUrl();
+    });
+
+    // Initial load
+    loadUrls();
+  </script>
+</body>
+</html>
